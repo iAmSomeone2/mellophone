@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include <sqlite_init.h>
+#include "sqlite_init.h"
 #include "Database.hpp"
 
 using namespace mellophone;
