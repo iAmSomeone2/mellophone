@@ -10,10 +10,10 @@ namespace fs = std::filesystem;
 namespace mellophone {
     class Library {
     private:
-        Database* database = nullptr;
+        std::shared_ptr<Database> database;
         fs::path userMusicFolder;
     public:
-        explicit Library(Database* db);
+        explicit Library(std::shared_ptr<Database> db);
 
         /**
          * Returns a reference to the user's HOME music folder.

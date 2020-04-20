@@ -3,36 +3,12 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <memory>
-
-#include <Database.hpp>
 
 using std::string, std::vector;
 
 namespace fs = std::filesystem;
 
 namespace mellophone {
-    class Library {
-    private:
-        std::shared_ptr<Database> database;
-        fs::path userMusicFolder;
-    public:
-        explicit Library(std::shared_ptr<Database> db);
-
-        /**
-         * Returns a reference to the user's HOME music folder.
-         * 
-         * @returns reference to the user's HOME music folder path.
-         */
-        fs::path& getMusicFolderPath();
-
-        /**
-         * Scans through the user's HOME music folder to locate songs in supported 
-         * formats and adds them to the database.
-         */
-        void scanLibrary();
-    };
-
     enum Format {
         flac,
         vorbis
@@ -69,6 +45,12 @@ namespace mellophone {
          * FLAC and Vorbis are currently supported.
          */
         bool determineFormat();
+
+        /**
+         * Attempts to fill the Track's metadata entries using the data
+         * from the track's file.
+         */
+        void importMetadata();
     public:
         explicit Track(const fs::path& trackLocation);
 
@@ -76,4 +58,4 @@ namespace mellophone {
             return this->format;
         }
     };
-}
+};

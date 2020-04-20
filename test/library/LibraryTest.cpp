@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <memory>
 #include <gtest/gtest.h>
 
 #include <Library.hpp>
@@ -8,15 +9,12 @@ using namespace mellophone;
 
 class LibraryTest : public ::testing::Test {
 protected:
-  Database* testDb = nullptr;
+  std::shared_ptr<Database> testDb;
 
   LibraryTest() {
-    this->testDb = new Database(fs::path("./testDb.sqlite"));
+    this->testDb.reset(new Database(fs::path("./testDb.sqlite")));
   }
 
-  ~LibraryTest() override {
-    delete this->testDb;
-  }
 };
 
 TEST_F(LibraryTest, DetectUserMusicFolder) {

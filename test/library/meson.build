@@ -3,3 +3,9 @@ library_test = executable('lib-test', 'LibraryTest.cpp',
     include_directories: [proj_include])
 
 test('Library Test', library_test)
+
+track_test = executable('track-test', 'TrackTest.cpp',
+    dependencies: [gtest], link_with: [library_lib],
+    include_directories: [proj_include])
+
+test('Track Test', track_test)

@@ -6,7 +6,7 @@
 
 using namespace mellophone;
 
-Library::Library(Database* db) {
+Library::Library(std::shared_ptr<Database> db) {
     this->database = db;
 
     const char *homeDir = getenv("HOME");
@@ -37,5 +37,5 @@ fs::path& Library::getMusicFolderPath() {
  * formats and adds them to the database.
  */
 void Library::scanLibrary() {
-
+    
 }
