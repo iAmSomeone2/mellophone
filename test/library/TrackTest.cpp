@@ -33,6 +33,10 @@ TEST_F(TrackTest, CheckFLACMetadata)
 
   ASSERT_EQ("The Black Keys", flacTrack.getArtist());
   ASSERT_EQ("Attack & Release", flacTrack.getAlbum());
+  ASSERT_EQ(2, flacTrack.getTrackNum());
+  ASSERT_EQ(11, flacTrack.getTotalTracks());
+  ASSERT_EQ(1, flacTrack.getDiscNum());
+  ASSERT_EQ(1, flacTrack.getTotalDiscs());
 }
 
 int main(int argc, char **argv)
