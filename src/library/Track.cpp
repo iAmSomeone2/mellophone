@@ -14,12 +14,21 @@
     limitations under the License.
 */
 
+// Standard libs
 #include <fstream>
 #include <memory>
+#include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <thread>
 
+// Utility libs
+#include <openssl/sha.h>
+
+// Codec libs
 #include <FLAC++/metadata.h>
 
+// Local includes
 #include "Track.hpp"
 
 using std::unique_ptr;
@@ -36,6 +45,19 @@ Track::Track(const fs::path &trackLocation)
     {
         throw std::runtime_error("Failed to create Track object from file.");
     }
+
+    switch(this->format) {
+        case Format::flac:
+            this->importFLACMetadata();
+            break;
+        case Format::vorbis:
+            std::cerr << "Vorbis support in progress.\n";
+            break;
+        default:
+            throw std::runtime_error("Unsupported file type.");
+    }
+
+    // Generate file checksum. It's useful for finding duplicates.
 }
 
 bool Track::determineFormat()
@@ -104,50 +126,70 @@ void Track::importFLACMetadata()
     }
 
     uint32_t numComments = trackComment->get_num_comments();
-    vector<FLAC::Metadata::VorbisComment::Entry> commentEntries;
-    commentEntries.reserve(numComments);
+    map<string, string> commentEntries;
 
+    uint8_t artistCount = 0;
     for (uint32_t i = 0; i < numComments; i++)
     {
-        commentEntries.push_back(trackComment->get_comment(i));
+        string name = trackComment->get_comment(i).get_field_name();
+        string value = trackComment->get_comment(i).get_field_value();
+
+        if (name == "ARTIST")
+        {
+            artistCount++;
+            name.append(std::to_string(artistCount));
+        }
+
+        commentEntries[name] = value;
     }
 
-    for (auto const &entry : commentEntries)
-    {
-        const string fieldName = entry.get_field_name();
-        const string fieldValue = entry.get_field_value();
+    this->parseVorbisCommentMap(commentEntries);
+}
 
-        if (fieldName == "TITLE")
+void Track::parseVorbisCommentMap(map<string, string> comments)
+{
+    this->artist.clear();
+    for (const auto &entryPair : comments)
+    {
+        int16_t findLoc = -1;
+        findLoc = entryPair.first.find("ARTIST");
+
+        if (findLoc >= 0)
         {
-            this->title = fieldValue;
+            // Append this artist to the artists vector
+            this->artist.push_back(entryPair.second);
         }
-        else if (fieldName == "ALBUM")
+        else
         {
-            this->album = fieldValue;
-        }
-        else if (fieldName == "ARTIST")
-        {
-            this->artist.push_back(fieldValue);
-        }
-        else if (fieldName == "DATE")
-        {
-            this->date = fieldValue;
-        }
-        else if (fieldName == "DISCNUMBER")
-        {
-            this->discNum = static_cast<uint8_t>(strtoul(fieldValue.c_str(), nullptr, 10));
-        }
-        else if (fieldName == "TOTALDISCS")
-        {
-            this->totalDiscs = static_cast<uint8_t>(strtoul(fieldValue.c_str(), nullptr, 10));
-        }
-        else if (fieldName == "TRACKNUMBER")
-        {
-            this->trackNum = static_cast<uint8_t>(strtoul(fieldValue.c_str(), nullptr, 10));
-        }
-        else if (fieldName == "TOTALTRACKS")
-        {
-            this->totalTracks = static_cast<uint8_t>(strtoul(fieldValue.c_str(), nullptr, 10));
+            // Check for any of the other fields.
+            if (entryPair.first == "TITLE")
+            {
+                this->title = entryPair.second;
+            }
+            else if (entryPair.first == "ALBUM")
+            {
+                this->album = entryPair.second;
+            }
+            else if (entryPair.first == "DATE")
+            {
+                this->date = entryPair.second;
+            }
+            else if (entryPair.first == "DISCNUMBER")
+            {
+                this->discNum = static_cast<uint8_t>(strtoul(entryPair.second.c_str(), nullptr, 10));
+            }
+            else if (entryPair.first == "TOTALDISCS")
+            {
+                this->totalDiscs = static_cast<uint8_t>(strtoul(entryPair.second.c_str(), nullptr, 10));
+            }
+            else if (entryPair.first == "TRACKNUMBER")
+            {
+                this->trackNum = static_cast<uint8_t>(strtoul(entryPair.second.c_str(), nullptr, 10));
+            }
+            else if (entryPair.first == "TOTALTRACKS")
+            {
+                this->totalTracks = static_cast<uint8_t>(strtoul(entryPair.second.c_str(), nullptr, 10));
+            }
         }
     }
 }

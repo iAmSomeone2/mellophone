@@ -36,8 +36,10 @@ enum Format
 class Track
 {
 private:
+    // Internal data
     Format format;
     fs::path trackLocation;
+    char hash[256];
 
     // Track metadata
     string title = "unknown";
@@ -65,7 +67,13 @@ private:
      * FLAC and Vorbis are currently supported.
      */
     bool determineFormat();
-
+    
+    /**
+     * Reads through a map of tags and values to retrieve the relevant metadata.
+     * 
+     * @param map containing Vorbis comment trags and values.
+     */
+    void parseVorbisCommentMap(map<string, string> comments);
 public:
     explicit Track(const fs::path &trackLocation);
 
@@ -108,15 +116,37 @@ public:
 
     /**
      * Returns the date (as a string) the track was released.
+     * 
+     * @returns date (as a string) the track was released
      */
     string getDate();
 
+    /**
+     * Returns the track number
+     * 
+     * @returns track number
+     */
     uint8_t getTrackNum();
 
+    /**
+     * Returns the total number of tracks in the album or compilation.
+     * 
+     * @returns total number of tracks in the album or compilation
+     */
     uint8_t getTotalTracks();
 
+    /**
+     * Returns the associated disc number from the set of discs.
+     * 
+     * @returns associated disc number from the set of discs
+     */
     uint8_t getDiscNum();
 
+    /**
+     * Returns the total number of discs in the set.
+     * 
+     * @returns total number of discs in the set
+     */
     uint8_t getTotalDiscs();
 };
 }; // namespace mellophone
