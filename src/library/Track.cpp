@@ -69,7 +69,7 @@ void Track::generateFileHash() {
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
 
-    uint8_t* buffer = static_cast<uint8_t*>(calloc(HASH_BUFF_SIZE, sizeof(uint8_t)));
+    uint8_t* buffer = new uint8_t[HASH_BUFF_SIZE];
 
     uint32_t bytesRead = 0;
 
@@ -79,7 +79,7 @@ void Track::generateFileHash() {
     }
     SHA256_Final(this->shaDigest.data(), &sha256);
 
-    delete buffer;
+    delete[] buffer;
     trackStream.close();
 }
 
