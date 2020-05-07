@@ -16,17 +16,23 @@
 
 #pragma once
 
+// Standard libs
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 
-using std::string, std::vector, std::map;
+// Utility libs
+#include <openssl/sha.h>
+
+using std::string, std::vector, std::map, std::array;
 
 namespace fs = std::filesystem;
 
 namespace mellophone
 {
+    static const uint32_t HASH_BUFF_SIZE = 2097152; // 2MB
 enum Format
 {
     flac,
@@ -39,7 +45,7 @@ private:
     // Internal data
     Format format;
     fs::path trackLocation;
-    char hash[256];
+    array<uint8_t, SHA256_DIGEST_LENGTH> shaDigest;
 
     // Track metadata
     string title = "unknown";
@@ -76,6 +82,11 @@ private:
     void parseVorbisCommentMap(map<string, string> comments);
 public:
     explicit Track(const fs::path &trackLocation);
+
+    /**
+     * Thread-safe method for generating the SHA256 hash of the track data.
+     */
+    void generateFileHash();
 
     Format getFormat()
     {
@@ -148,5 +159,12 @@ public:
      * @returns total number of discs in the set
      */
     uint8_t getTotalDiscs();
+
+    /**
+     * Converts the raw SHA256 hash to a string and returns it.
+     * 
+     * @returns string version of raw SHA256 string
+     */
+    string getHashAsString();
 };
 }; // namespace mellophone

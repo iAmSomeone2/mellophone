@@ -20,10 +20,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <thread>
 
 // Utility libs
-#include <openssl/sha.h>
+#include <boost/format.hpp>
 
 // Codec libs
 #include <FLAC++/metadata.h>
@@ -56,8 +55,45 @@ Track::Track(const fs::path &trackLocation)
         default:
             throw std::runtime_error("Unsupported file type.");
     }
+}
 
-    // Generate file checksum. It's useful for finding duplicates.
+void Track::generateFileHash() {
+    std::stringstream errStream;
+    std::ifstream trackStream = std::ifstream(this->trackLocation, std::ios::binary);
+
+    if (!trackStream.is_open()) {
+        errStream << boost::format("Unable to open '%s' to generate hash.") % this->trackLocation;
+        throw std::runtime_error(errStream.str());
+    }
+
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+
+    uint8_t* buffer = static_cast<uint8_t*>(calloc(HASH_BUFF_SIZE, sizeof(uint8_t)));
+
+    uint32_t bytesRead = 0;
+
+    while((bytesRead = trackStream.readsome(reinterpret_cast<char*>(buffer), HASH_BUFF_SIZE)))
+    {
+        SHA256_Update(&sha256, buffer, bytesRead);
+    }
+    SHA256_Final(this->shaDigest.data(), &sha256);
+
+    delete buffer;
+    trackStream.close();
+}
+
+string Track::getHashAsString()
+{
+    char outBuff[65];
+
+    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        sprintf(outBuff + (i * 2), "%02x", this->shaDigest[i]);
+    }
+
+    outBuff[64] = '\0';
+
+    return string(outBuff);
 }
 
 bool Track::determineFormat()
