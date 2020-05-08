@@ -9,9 +9,3 @@ flac_track_test = executable('flac-track-test', 'FLACTrackTest.cpp',
     include_directories: [proj_include])
 
 test('FLAC Track Test', flac_track_test)
-
-# vorbis_track_test = executable('vorbis-track-test', 'VorbisTrackTest.cpp',
-#     dependencies: [gtest], link_with: [library_lib],
-#     include_directories: [proj_include])
-
-# test('Vorbis Track Test', vorbis_track_test)
