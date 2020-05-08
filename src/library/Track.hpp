@@ -79,7 +79,7 @@ private:
      * 
      * @param map containing Vorbis comment trags and values.
      */
-    void parseVorbisCommentMap(map<string, string> comments);
+    void parseVorbisCommentMap(const map<string, string> &comments);
 public:
     explicit Track(const fs::path &trackLocation);
 

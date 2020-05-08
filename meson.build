@@ -5,6 +5,7 @@ project('mellophone', ['cpp'], version: '0.0.1',
 thread_lib = dependency('threads', required: true)
 
 sqlite3 = dependency('sqlite3', version: '>=3.10.0', required: true)
+boost_libs = dependency('boost', version: '>=1.30.0', required: true)
 
 proj_include = include_directories('include')
 

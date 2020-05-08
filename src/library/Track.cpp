@@ -26,6 +26,7 @@
 
 // Codec libs
 #include <FLAC++/metadata.h>
+#include <vorbis/vorbisfile.h>
 
 // Local includes
 #include "Track.hpp"
@@ -50,7 +51,7 @@ Track::Track(const fs::path &trackLocation)
             this->importFLACMetadata();
             break;
         case Format::vorbis:
-            std::cerr << "Vorbis support in progress.\n";
+            this->importVorbisMetadata();
             break;
         default:
             throw std::runtime_error("Unsupported file type.");
@@ -152,9 +153,71 @@ bool Track::determineFormat()
     return confirmedFormat;
 }
 
+void Track::importVorbisMetadata()
+{
+    std::stringstream errStream;
+    OggVorbis_File* vorbisFile = nullptr;
+
+    const char* path = this->trackLocation.c_str();
+
+    /*
+        Using ov_fopen doesn't seem to work with files that have spaces in them. Because of this (and to support Windows in the future),
+        I'll need to set up the data handling callbacks.
+    */
+    if(int result = ov_fopen(path, vorbisFile) != 0) {
+        switch (result) {
+            case OV_EREAD:
+                errStream << boost::format("Failed to open '%s'") % this->trackLocation.string();
+                break;
+            case OV_ENOTVORBIS:
+                errStream << boost::format("'%s' does not contain any Vorbis data.") % this->trackLocation.string();
+                break;
+            case OV_EBADHEADER:
+                errStream << boost::format("Invalid Vorbis bitstream header in file: '%s'.") % this->trackLocation.string();
+                break;
+            default:
+                errStream << boost::format("Unknown error ocurred when attempting to import metadata from '%s'.") % this->trackLocation.string();
+        }
+
+        throw std::runtime_error(errStream.str());
+    }
+
+    vorbis_comment* trackComment = ov_comment(vorbisFile, -1);
+
+    if (!trackComment) {
+        errStream << boost::format("Missing comment in file: '%s'") % this->trackLocation.string();
+        throw std::runtime_error(errStream.str());
+    }
+
+    // Read track comments into a map to feed to the parser.
+    map<string, string> comments;
+    uint32_t numComments = static_cast<uint32_t>(trackComment->comments);
+
+    uint32_t artistCount = 0;
+    for (uint32_t i = 0; i < numComments; i++)
+    {
+        string commentStr = trackComment->user_comments[i];
+        uint32_t delimLoc = commentStr.find('=');
+
+        string key = commentStr.substr(0, delimLoc+1);
+        string value = commentStr.substr(delimLoc);
+
+        if (key == "ARTIST")
+        {
+            artistCount++;
+            key.append(std::to_string(artistCount));
+        }
+
+        comments[key] = value;
+    }
+
+    ov_clear(vorbisFile);
+    this->parseVorbisCommentMap(comments);
+}
+
 void Track::importFLACMetadata()
 {
-    FLAC::Metadata::VorbisComment *trackComment = nullptr;
+    FLAC::Metadata::VorbisComment* trackComment = nullptr;
 
     if (!FLAC::Metadata::get_tags(this->trackLocation.c_str(), trackComment))
     {
@@ -182,7 +245,7 @@ void Track::importFLACMetadata()
     this->parseVorbisCommentMap(commentEntries);
 }
 
-void Track::parseVorbisCommentMap(map<string, string> comments)
+void Track::parseVorbisCommentMap(const map<string, string> &comments)
 {
     this->artist.clear();
     for (const auto &entryPair : comments)

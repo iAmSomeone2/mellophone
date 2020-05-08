@@ -36,6 +36,19 @@ TEST_F(TrackTest, CheckFLACMetadata)
   ASSERT_EQ(1, flacTrack.getTotalDiscs());
 }
 
+TEST_F(TrackTest, CheckVorbisMetadata)
+{
+  Track oggTrack = Track(this->oggFile);
+
+  oggTrack.importVorbisMetadata();
+
+  ASSERT_EQ("The Presidents of the United States", oggTrack.getArtist());
+  ASSERT_EQ("The Presidents of the United States", oggTrack.getAlbum());
+  ASSERT_EQ(03, oggTrack.getTrackNum());
+  ASSERT_EQ(1, oggTrack.getDiscNum());
+  ASSERT_EQ(1, oggTrack.getTotalDiscs());
+}
+
 TEST_F(TrackTest, CheckFLACChecksum) 
 {
   string expectedHash = "fa16f387aa12c4232adda38e474d62901c6f951c8cb53125073359563391f3ad";
