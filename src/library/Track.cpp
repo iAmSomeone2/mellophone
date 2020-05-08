@@ -178,6 +178,11 @@ void Track::parseVorbisCommentMap(const map<string, string> &comments)
     }
 }
 
+Format Track::getFormat()
+{
+    return this->format;
+}
+
 /**
  * Retrieves the title of the track.
  */

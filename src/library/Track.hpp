@@ -32,7 +32,10 @@ namespace fs = std::filesystem;
 
 namespace mellophone
 {
-    static const uint32_t HASH_BUFF_SIZE = 2097152; // 2MB
+    static const uint32_t KILOBYTE = 1024;
+    static const uint32_t MEGABYTE = 1048576;
+
+    static const uint32_t HASH_BUFF_SIZE = MEGABYTE;
 enum Format
 {
     flac,
@@ -42,8 +45,6 @@ enum Format
 
 class Track
 {
-private:
-
 protected:
     // Internal data
     Format format;
@@ -92,10 +93,10 @@ public:
      */
     void generateFileHash();
 
-    Format getFormat()
-    {
-        return this->format;
-    }
+    /**
+     * Retrieves the track's associated format.
+     */
+    Format getFormat();
 
     /**
      * Retrieves the title of the track.

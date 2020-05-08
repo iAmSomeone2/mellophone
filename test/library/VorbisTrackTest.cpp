@@ -20,18 +20,18 @@ TEST_F(VorbisTrackTest, CheckTrackFormat)
   ASSERT_EQ(Format::vorbis, oggTrack.getFormat());
 }
 
-TEST_F(VorbisTrackTest, CheckMetadata)
-{
-  VorbisTrack oggTrack = VorbisTrack(this->oggFile);
+// TEST_F(VorbisTrackTest, CheckMetadata)
+// {
+//   VorbisTrack oggTrack = VorbisTrack(this->oggFile);
 
-  oggTrack.importMetadata();
+//   oggTrack.importMetadata();
 
-  ASSERT_EQ("The Presidents of the United States", oggTrack.getArtist());
-  ASSERT_EQ("The Presidents of the United States", oggTrack.getAlbum());
-  ASSERT_EQ(03, oggTrack.getTrackNum());
-  ASSERT_EQ(1, oggTrack.getDiscNum());
-  ASSERT_EQ(1, oggTrack.getTotalDiscs());
-}
+//   ASSERT_EQ("The Presidents of the United States", oggTrack.getArtist());
+//   ASSERT_EQ("The Presidents of the United States", oggTrack.getAlbum());
+//   ASSERT_EQ(03, oggTrack.getTrackNum());
+//   ASSERT_EQ(1, oggTrack.getDiscNum());
+//   ASSERT_EQ(1, oggTrack.getTotalDiscs());
+// }
 
 TEST_F(VorbisTrackTest, CheckChecksum) 
 {
