@@ -20,4 +20,3 @@
 #include "Library.hpp"
 #include "Track.hpp"
 #include "FLACTrack.hpp"
-#include "VorbisTrack.hpp"
