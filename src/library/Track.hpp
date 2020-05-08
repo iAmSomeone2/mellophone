@@ -36,12 +36,15 @@ namespace mellophone
 enum Format
 {
     flac,
-    vorbis
+    vorbis,
+    unknown
 };
 
 class Track
 {
 private:
+
+protected:
     // Internal data
     Format format;
     fs::path trackLocation;
@@ -66,13 +69,6 @@ private:
     string location = "";
     string contact = "";
     string isrcCode = "";
-
-    /**
-     * Determines the track's format using the extension as a hint.
-     * 
-     * FLAC and Vorbis are currently supported.
-     */
-    bool determineFormat();
     
     /**
      * Reads through a map of tags and values to retrieve the relevant metadata.
@@ -80,8 +76,16 @@ private:
      * @param map containing Vorbis comment trags and values.
      */
     void parseVorbisCommentMap(const map<string, string> &comments);
+
 public:
     explicit Track(const fs::path &trackLocation);
+
+    /**
+     * Determines the track's format using the extension as a hint.
+     * 
+     * FLAC and Vorbis are currently supported.
+     */
+    static Format determineFormat(const fs::path& trackPath);
 
     /**
      * Thread-safe method for generating the SHA256 hash of the track data.
@@ -92,18 +96,6 @@ public:
     {
         return this->format;
     }
-
-    /**
-     * Attempts to fill the Track's metadata entries using the data
-     * from the track's file.
-     */
-    void importVorbisMetadata();
-
-    /**
-     * Attempts to fill the Track's metadata entries using the data
-     * from the track's file.
-     */
-    void importFLACMetadata();
 
     /**
      * Retrieves the title of the track.

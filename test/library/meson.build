@@ -4,8 +4,14 @@ library_test = executable('lib-test', 'LibraryTest.cpp',
 
 test('Library Test', library_test)
 
-track_test = executable('track-test', 'TrackTest.cpp',
+flac_track_test = executable('flac-track-test', 'FLACTrackTest.cpp',
     dependencies: [gtest], link_with: [library_lib],
     include_directories: [proj_include])
 
-test('Track Test', track_test)
+test('FLAC Track Test', flac_track_test)
+
+# vorbis_track_test = executable('vorbis-track-test', 'VorbisTrackTest.cpp',
+#     dependencies: [gtest], link_with: [library_lib],
+#     include_directories: [proj_include])
+
+# test('Vorbis Track Test', vorbis_track_test)

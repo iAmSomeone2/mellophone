@@ -1,4 +1,6 @@
-library_srcs = ['Library.cpp', 'Library.hpp', 'Track.cpp', 'Track.hpp']
+library_srcs = ['Library.cpp', 'Library.hpp', 
+    'Track.cpp', 'Track.hpp',
+    'FLACTrack.cpp', 'FLACTrack.hpp']
 
 openssl = dependency('openssl', required: true)
 vorbis_lib = dependency('vorbis', required: true)

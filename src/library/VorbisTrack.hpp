@@ -16,8 +16,23 @@
 
 #pragma once
 
-#include "Database.hpp"
-#include "Library.hpp"
+#include <filesystem>
+
 #include "Track.hpp"
-#include "FLACTrack.hpp"
-#include "VorbisTrack.hpp"
+
+namespace fs = std::filesystem;
+
+namespace mellophone
+{
+class VorbisTrack : public Track
+{
+public:
+    explicit VorbisTrack(const fs::path &trackLocation);
+
+    /**
+     * Attempts to fill the Track's metadata entries using the data
+     * from the track's file.
+     */
+    void importMetadata();
+};
+}
