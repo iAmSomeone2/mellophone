@@ -1,1 +1,1 @@
-/home/bdavidson/c_dev/mellophone/src/database/Database.hpp
+../src/database/Database.hpp

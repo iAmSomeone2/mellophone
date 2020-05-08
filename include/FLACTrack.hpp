@@ -1,1 +1,1 @@
-/home/bdavidson/c_dev/mellophone/src/library/FLACTrack.hpp
+../src/library/FLACTrack.hpp

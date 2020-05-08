@@ -1,1 +1,1 @@
-/home/bdavidson/c_dev/mellophone/src/library/Track.hpp
+../src/library/Track.hpp
