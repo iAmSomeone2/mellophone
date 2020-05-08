@@ -174,7 +174,33 @@ void Track::parseVorbisCommentMap(const map<string, string> &comments)
             {
                 this->totalTracks = static_cast<uint8_t>(strtoul(entryPair.second.c_str(), nullptr, 10));
             }
+            else if (entryPair.first == "VERSION")
+            {
+                this->version = entryPair.second;
+            }
+            else if (entryPair.first == "PERFORMER")
+            {
+                this->performer = entryPair.second;
+            }
+            else if (entryPair.first == "GENRE")
+            {
+                this->genre = entryPair.second;
+            }
+            else if (entryPair.first == "LICENSE")
+            {
+                this->licence = entryPair.second;
+            }
+            else if (entryPair.first == "DESCRIPTION")
+            {
+                this->description = entryPair.second;
+            }
         }
+    }
+
+    // Assume that the performer is the first artist in the vector
+    if (this->performer == "unknown")
+    {
+        this->performer = this->getArtist();
     }
 }
 

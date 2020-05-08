@@ -63,13 +63,9 @@ protected:
     string performer = "unknown";
     string copyright = "";
     string licence = "";
-    string organization = "";
     string description = "";
     string genre = "";
     string date = "";
-    string location = "";
-    string contact = "";
-    string isrcCode = "";
     
     /**
      * Reads through a map of tags and values to retrieve the relevant metadata.
