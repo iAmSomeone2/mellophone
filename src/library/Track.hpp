@@ -19,12 +19,14 @@
 // Standard libs
 #include <filesystem>
 #include <string>
+#include <memory>
 #include <vector>
 #include <array>
 #include <map>
 
 // Utility libs
 #include <openssl/sha.h>
+#include <sqlite3.h>
 
 using std::string, std::vector, std::map, std::array;
 
@@ -45,6 +47,9 @@ enum Format
 
 class Track
 {
+private:
+    const char* ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
+    const char* ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
 protected:
     // Internal data
     Format format;
@@ -88,6 +93,16 @@ public:
      * Thread-safe method for generating the SHA256 hash of the track data.
      */
     void generateFileHash();
+
+    /**
+     * Adds the track and supporting data to the database.
+     * 
+     * Tracks in the database rely on mapping to an album and an artist, so if the
+     * corresponding data is missing it will be created.
+     * 
+     * @param db database connection to use.
+     */
+    void addToDatabase(const std::shared_ptr<sqlite3*> db);
 
     /**
      * Retrieves the track's associated format.

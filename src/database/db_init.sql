@@ -1,40 +1,36 @@
 BEGIN TRANSACTION;
 
-CREATE TABLE "artists" (
-	"id"	    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-	"name"	    TEXT NOT NULL UNIQUE,
-    "picture"   INTEGER,
-    FOREIGN KEY("picture") REFERENCES "artist_pics"("id")
+CREATE TABLE "Albums" (
+	"ID"	INTEGER NOT NULL UNIQUE,
+	"Name"	TEXT NOT NULL,
+	"Artist"	INTEGER NOT NULL,
+	"CoverArt"	BLOB,
+	PRIMARY KEY("ID"),
+	FOREIGN KEY("Artist") REFERENCES "Artists"("ID")
+		ON UPDATE CASCADE
+		ON DELETE CASCADE
 );
 
-CREATE TABLE "artist_pics" (
-    "id"            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    "file_location" TEXT NOT NULL
+CREATE TABLE "Artists" (
+	"ID"	INTEGER NOT NULL UNIQUE,
+	"Name"	TEXT NOT NULL UNIQUE,
+	"Picture"	BLOB,
+	PRIMARY KEY("ID")
 );
 
-CREATE TABLE "albums" (
-	"id"	    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-	"name"	    TEXT NOT NULL,
-	"artist"	INTEGER NOT NULL,
-	"artwork"	INTEGER,
-	FOREIGN KEY("artist") REFERENCES "artists"("id"),
-    FOREIGN KEY("artwork") REFERENCES "album_art"("id")
-);
-
-CREATE TABLE "album_art" (
-    "id"            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    "file_location" TEXT NOT NULL
-);
-
-CREATE TABLE "songs" (
-	"id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-	"name"	TEXT NOT NULL,
-	"album"	INTEGER NOT NULL,
-	"track_number"	INTEGER NOT NULL,
-	"file_location"	TEXT NOT NULL UNIQUE,
-	"artwork"	BLOB,
-	FOREIGN KEY("album") REFERENCES "albums"("id"),
-	FOREIGN KEY("artwork") REFERENCES "albums"("artwork")
+CREATE TABLE "Tracks" (
+	"Checksum"	TEXT NOT NULL UNIQUE,
+	"FileLocation"	TEXT NOT NULL UNIQUE,
+	"Title"	TEXT NOT NULL,
+	"Album"	INTEGER NOT NULL,
+	"TrackNum"	INTEGER,
+	"TotalTracks"	INTEGER,
+	"DiscNum"	INTEGER,
+	"TotalDiscs"	INTEGER,
+	PRIMARY KEY("Checksum"),
+	FOREIGN KEY("Album") REFERENCES "Albums"("ID")
+		ON UPDATE CASCADE
+		ON DELETE CASCADE
 );
 
 COMMIT;

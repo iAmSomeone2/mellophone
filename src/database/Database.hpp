@@ -22,37 +22,40 @@
 
 #include <sqlite3.h>
 
-using std::filesystem::path;
 using std::queue;
+using std::filesystem::path;
 
-namespace mellophone {
+namespace mellophone
+{
 
-    static const std::string CHECK_STMT = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'songs\';";
+static const std::string CHECK_STMT = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'Tracks\';";
 
-    class Database {
-    private:
-        queue<sqlite3_stmt*> stmtQueue = queue<sqlite3_stmt*>();
-        sqlite3* dbConnection = nullptr;
+class Database
+{
+private:
+    queue<sqlite3_stmt *> stmtQueue = queue<sqlite3_stmt *>();
+    sqlite3 *dbConnection = nullptr;
 
-        void startTransaction();
-        void commitTransaction();
-        void rollbackTransaction();
-    public:
-        explicit Database(const path& dbPath);
+    void startTransaction();
+    void commitTransaction();
+    void rollbackTransaction();
 
-        ~Database();
+public:
+    explicit Database(const path &dbPath);
 
-        /**
-         * Compiles the statment into an sqlite3_stmt struct and adds it to the
-         * execution queue.
-         * 
-         * @param statement SQL statement to compile and execute as part of a transaction
-         */
-        void enqueueStatement(std::string statemtent);
+    ~Database();
 
-        /**
-         * Executes the enqueued statements as a transaction.
-         */
-        bool submitTransaction();
-    };
-}
+    /**
+     * Compiles the statment into an sqlite3_stmt struct and adds it to the
+     * execution queue.
+     * 
+     * @param statement SQL statement to compile and execute as part of a transaction
+     */
+    void enqueueStatement(std::string statemtent);
+
+    /**
+     * Executes the enqueued statements as a transaction.
+     */
+    bool submitTransaction();
+};
+} // namespace mellophone

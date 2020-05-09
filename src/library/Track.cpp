@@ -23,6 +23,7 @@
 
 // Utility libs
 #include <boost/format.hpp>
+#include <sqlite3.h>
 
 // Local includes
 #include "Track.hpp"

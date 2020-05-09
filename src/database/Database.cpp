@@ -15,9 +15,12 @@
 */
 
 #include <iostream>
+#include <memory>
 
 #include "sqlite_init.h"
 #include "Database.hpp"
+
+using std::vector;
 
 using namespace mellophone;
 

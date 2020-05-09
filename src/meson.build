@@ -1,4 +1,4 @@
-subdir('database')
+# subdir('database')
 subdir('library')
 
  # mellophone = executable('mellophone.cpp')

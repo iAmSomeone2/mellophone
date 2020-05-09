@@ -3,23 +3,16 @@
 #include <gtest/gtest.h>
 
 #include <Library.hpp>
-#include <Database.hpp>
 
 using namespace mellophone;
 
 class LibraryTest : public ::testing::Test {
 protected:
-  std::shared_ptr<Database> testDb;
-
-  LibraryTest() {
-    this->testDb.reset(new Database(fs::path("./testDb.sqlite")));
-  }
-
 };
 
 TEST_F(LibraryTest, DetectUserMusicFolder) {
     const fs::path musicHome = fs::path("/home/bdavidson/Music");
-    Library lib = Library(this->testDb);
+    Library lib = Library();
 
     ASSERT_EQ(lib.getMusicFolderPath(), musicHome);
 }
