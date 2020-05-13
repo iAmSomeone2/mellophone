@@ -28,7 +28,12 @@
 #include <openssl/sha.h>
 #include <sqlite3.h>
 
-using std::string, std::vector, std::map, std::array;
+using std::string;
+using std::vector;
+using std::map;
+using std::array;
+using std::shared_ptr;
+using std::unique_ptr;
 
 namespace fs = std::filesystem;
 
@@ -36,6 +41,8 @@ namespace Mellophone
 {
 namespace MediaEngine
 {
+static const uint8_t SHA256_STR_LEN = 65;
+
 static const uint32_t KILOBYTE = 1024;
 static const uint32_t MEGABYTE = 1048576;
 
@@ -50,8 +57,10 @@ enum Format
 class Track
 {
 private:
-    const char *ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
-    const char *ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+    const string ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
+    const string ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+
+    const string INSERT_TRACK_SQL = "INSERT INTO Tracks VALUES(\"@chksum\",\"@loc\",\"@title\",@album,@trackNum,@totalTracks,@discNum,@totalDiscs);";
 
 protected:
     // Internal data
@@ -84,6 +93,28 @@ protected:
      */
     void parseVorbisCommentMap(const map<string, string> &comments);
 
+    /**
+     * Attempts to locate the album ID in the database. In the event that the album
+     * does not exist in the database, a new entry is created and the ID of that is returned.
+     * 
+     * @param name name of album to search for or create
+     * @param db shared pointer to the database connection
+     * 
+     * @returns integer ID of the album.
+     */
+    uint32_t getAlbumID(const string& name, const shared_ptr<sqlite3 *> db);
+
+    /**
+     * Attempts to locate the artist ID in the database. In the event that the artist
+     * does not exist in the database, a new entry is created and the ID of that is returned.
+     * 
+     * @param name name of artsit to search for or create
+     * @param db shared pointer to the database connection
+     * 
+     * @returns integer ID of the artist.
+     */
+    uint32_t getArtistID(const string& name, const shared_ptr<sqlite3 *> db);
+
 public:
     explicit Track(const fs::path &trackLocation);
 
@@ -107,7 +138,7 @@ public:
      * 
      * @param db database connection to use.
      */
-    void addToDatabase(const std::shared_ptr<sqlite3 *> db);
+    void addToDatabase(const shared_ptr<sqlite3 *> db);
 
     /**
      * Retrieves the track's associated format.
