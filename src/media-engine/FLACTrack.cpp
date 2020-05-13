@@ -14,9 +14,16 @@
     limitations under the License.
 */
 
+#include <memory>
+
+#include <FLAC/format.h>
+#include <FLAC/metadata.h>
 #include <FLAC++/metadata.h>
 
 #include "FLACTrack.hpp"
+
+using std::shared_ptr;
+using std::unique_ptr;
 
 using namespace mellophone;
 
@@ -27,21 +34,27 @@ FLACTrack::FLACTrack(const fs::path &trackLocation) : Track(trackLocation)
 
 void FLACTrack::importMetadata()
 {
-    FLAC::Metadata::VorbisComment* trackComment = nullptr;
+    FLAC__StreamMetadata* streamMetadata = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
 
-    if (!FLAC::Metadata::get_tags(this->trackLocation.c_str(), trackComment))
+    if (!FLAC__metadata_get_tags(this->trackLocation.c_str(), &streamMetadata))
     {
-        throw std::runtime_error("Failed to located metadata in FLAC file.");
+        throw std::runtime_error("Failed to locate metadata in FLAC file.");
     }
+    
+    const auto& vorbisComment = streamMetadata->data.vorbis_comment;
 
-    uint32_t numComments = trackComment->get_num_comments();
+    uint32_t numComments = vorbisComment.num_comments;
     map<string, string> commentEntries;
 
     uint8_t artistCount = 0;
     for (uint32_t i = 0; i < numComments; i++)
     {
-        string name = trackComment->get_comment(i).get_field_name();
-        string value = trackComment->get_comment(i).get_field_value();
+        string entry = reinterpret_cast<char*>(vorbisComment.comments[i].entry);
+
+        uint64_t splitLoc = entry.find('=');
+
+        string name = entry.substr(0, splitLoc);
+        string value = entry.substr(splitLoc+1);
 
         if (name == "ARTIST")
         {
@@ -51,6 +64,8 @@ void FLACTrack::importMetadata()
 
         commentEntries[name] = value;
     }
+
+    FLAC__metadata_object_delete(streamMetadata);
 
     // FLAC uses the standard Vorbis comment system
     this->parseVorbisCommentMap(commentEntries);

@@ -71,6 +71,8 @@ protected:
     string description = "";
     string genre = "";
     string date = "";
+
+    static string urlEncode(const string& value);
     
     /**
      * Reads through a map of tags and values to retrieve the relevant metadata.

@@ -25,10 +25,15 @@ namespace fs = std::filesystem;
 
 namespace mellophone {
     static const std::string CHECK_STMT = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'Tracks\';";
+
+    static const std::string USER_DATA_DIR = "/.local/share/mellophone/";
+
     class Library {
     private:
         std::shared_ptr<sqlite3*> dbConnection = std::make_shared<sqlite3*>();
-        fs::path userMusicFolder;
+        fs::path userMusicDir;
+        fs::path userDataDir;
+
 
         /**
          * Confirms the existence of the database and connects to it or
@@ -47,7 +52,7 @@ namespace mellophone {
          * 
          * @returns reference to the user's HOME music folder path.
          */
-        fs::path& getMusicFolderPath();
+        const fs::path getMusicFolderPath();
 
         /**
          * Scans through the user's HOME music folder to locate songs in supported 

@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <cctype>
+#include <iomanip>
 
 // Utility libs
 #include <boost/format.hpp>
@@ -31,6 +33,31 @@
 using std::unique_ptr;
 
 using namespace mellophone;
+
+string Track::urlEncode(const string& value)
+{
+    std::ostringstream encodedStr;
+    encodedStr.fill('0');
+    encodedStr << std::hex;
+
+    for (auto i = value.begin(), n = value.end(); i != n; i++)
+    {
+        string::value_type c = (*i);
+
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            encodedStr << c;
+            continue;
+        }
+
+        // Encode all other characters
+        encodedStr << std::uppercase;
+        encodedStr << '%' << std::setw(2) << int((unsigned char) c);
+        encodedStr << std::nouppercase;
+    }
+
+    return encodedStr.str();
+}
 
 Track::Track(const fs::path &trackLocation)
 {

@@ -1,4 +1,1 @@
-# subdir('database')
-subdir('library')
-
- # mellophone = executable('mellophone.cpp')
+subdir('media-engine')
