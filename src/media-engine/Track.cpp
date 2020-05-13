@@ -232,45 +232,89 @@ void Track::parseVorbisCommentMap(const map<string, string> &comments)
     }
 }
 
-uint32_t Track::getAlbumID(const string& name, const shared_ptr<sqlite3 *> db)
-{
 
-    return 0;
-}
-
-uint32_t Track::getArtistID(const string& name, const shared_ptr<sqlite3 *> db)
+uint32_t Track::findAlbumID(const string& name, const shared_ptr<sqlite3*>& db)
 {
     unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
 
-    sqlite3_prepare_v2(*db, ARTIST_SELECT_SQL.c_str, ARTIST_SELECT_SQL.length(), stmt.get(), nullptr);
-    sqlite3_bind_text(*stmt, 1, this->artist[0].c_str(), -1, SQLITE_STATIC);
+    sqlite3_prepare_v2(*db, ALBUM_SELECT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, name.c_str(), -1, SQLITE_STATIC);
     int execResult = sqlite3_step(*stmt);
 
-    sqlite3_finalize(*stmt);
-
-    if (execResult == SQLITE_DONE)
-    {
-        // The artist does not exist, so insert it.
-        static const string ARTIST_INSERT_SQL = "INSERT INTO Artists(Name) VALUES(\"@name\");";
-        uint32_t stmtLen = ARTIST_INSERT_SQL.length() + this->artist[0].length();
-        sqlite3_prepare_v2(*db, ARTIST_INSERT_SQL.c_str(), stmtLen, stmt.get(), nullptr);
-        sqlite3_bind_text(*stmt, 1, this->artist[0].c_str(), -1, SQLITE_STATIC);
-        sqlite3_step(*stmt);
-        sqlite3_finalize(*stmt);
-    }
-
-    // Run the search again since a new entry may have been made.
-    sqlite3_prepare_v2(*db, ARTIST_SELECT_SQL.c_str, ARTIST_SELECT_SQL.length(), stmt.get(), nullptr);
-    sqlite3_bind_text(*stmt, 1, this->artist[0].c_str(), -1, SQLITE_STATIC);
-    execResult = sqlite3_step(*stmt);
-
+    uint32_t id = 0;
     if (execResult != SQLITE_ROW)
     {
-        throw std::runtime_error("Failed to add artist to database.");
+        return 0;
     }
 
-    const uint32_t id = sqlite3_column_int(*stmt, 0);
+    id = sqlite3_column_int(*stmt, 0);
     sqlite3_finalize(*stmt);
+    return id;
+}
+
+uint32_t Track::getAlbumID(const shared_ptr<sqlite3 *>& db)
+{
+    uint32_t id = Track::findAlbumID(this->album, db);
+
+    if (id != 0)
+    {
+        return id;
+    }
+
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    // No corresponding album was found, so a new entry will be created.
+    uint32_t artistID = this->getArtistID(db);
+    static const string ALBUM_INSERT_SQL = "INSERT INTO Albums(Name, Artist) VALUES(\"@name\",@artistID);";
+    sqlite3_prepare_v2(*db, ALBUM_INSERT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, this->album.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(*stmt, 2, artistID);
+    sqlite3_step(*stmt);
+    sqlite3_finalize(*stmt);
+
+    id = Track::findAlbumID(this->album, db);
+
+    return id;
+}
+
+uint32_t Track::findArtistID(const string& name, const shared_ptr<sqlite3*>& db)
+{
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    sqlite3_prepare_v2(*db, ARTIST_SELECT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, name.c_str(), -1, SQLITE_STATIC);
+    int execResult = sqlite3_step(*stmt);
+
+    uint32_t id = 0;
+    if (execResult != SQLITE_ROW)
+    {
+        return 0;
+    }
+
+    id = sqlite3_column_int(*stmt, 0);
+    sqlite3_finalize(*stmt);
+    return id;
+}
+
+uint32_t Track::getArtistID(const shared_ptr<sqlite3 *>& db)
+{
+    uint32_t id = Track::findArtistID(this->artist[0], db);
+
+    if (id != 0)
+    {
+        return id;
+    }
+
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    // No corresponding artist was found, so a new entry will be created.
+    static const string ARTIST_INSERT_SQL = "INSERT INTO Artists(Name) VALUES(\"@name\");";
+    sqlite3_prepare_v2(*db, ARTIST_INSERT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, this->artist[0].c_str(), -1, SQLITE_STATIC);
+    sqlite3_step(*stmt);
+    sqlite3_finalize(*stmt);
+
+    id = Track::findArtistID(this->artist[0], db);
 
     return id;
 }
@@ -282,7 +326,7 @@ void Track::addToDatabase(const shared_ptr<sqlite3 *> db)
 
     unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
 
-    sqlite3_prepare_v2(*db, FIND_CHECKSUM_STMT.c_str, FIND_CHECKSUM_STMT.length() + SHA256_STR_LEN, stmt.get(), nullptr);
+    sqlite3_prepare_v2(*db, FIND_CHECKSUM_STMT.c_str(), FIND_CHECKSUM_STMT.length() + SHA256_STR_LEN, stmt.get(), nullptr);
     sqlite3_bind_text(*stmt, 1, this->getHashAsString().c_str(), -1, SQLITE_STATIC);
     int execResult = sqlite3_step(*stmt);
 

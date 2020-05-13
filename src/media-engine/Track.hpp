@@ -47,6 +47,13 @@ static const uint32_t KILOBYTE = 1024;
 static const uint32_t MEGABYTE = 1048576;
 
 static const uint32_t HASH_BUFF_SIZE = MEGABYTE;
+
+// SQL STATEMENTS
+static const string ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
+static const string ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+
+static const string INSERT_TRACK_SQL = "INSERT INTO Tracks VALUES(\"@chksum\",\"@loc\",\"@title\",@album,@trackNum,@totalTracks,@discNum,@totalDiscs);";
+
 enum Format
 {
     flac,
@@ -57,11 +64,25 @@ enum Format
 class Track
 {
 private:
-    const string ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
-    const string ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+    /**
+     * Locates an album's ID in the database.
+     * 
+     * @param name album name to search for (case-sensitive)
+     * @param db database connection
+     * 
+     * @returns the ID of the album if found. 0 otherwise.
+     */
+    static uint32_t findAlbumID(const string& name, const shared_ptr<sqlite3*>& db);
 
-    const string INSERT_TRACK_SQL = "INSERT INTO Tracks VALUES(\"@chksum\",\"@loc\",\"@title\",@album,@trackNum,@totalTracks,@discNum,@totalDiscs);";
-
+    /**
+     * Locates an artist's ID in the database.
+     * 
+     * @param name artist name to search for (case-sensitive)
+     * @param db database connection
+     * 
+     * @returns the ID of the artist if found. 0 otherwise.
+     */
+    static uint32_t findArtistID(const string& name, const shared_ptr<sqlite3*>& db);
 protected:
     // Internal data
     Format format;
@@ -102,7 +123,7 @@ protected:
      * 
      * @returns integer ID of the album.
      */
-    uint32_t getAlbumID(const string& name, const shared_ptr<sqlite3 *> db);
+    uint32_t getAlbumID(const shared_ptr<sqlite3 *>& db);
 
     /**
      * Attempts to locate the artist ID in the database. In the event that the artist
@@ -113,7 +134,7 @@ protected:
      * 
      * @returns integer ID of the artist.
      */
-    uint32_t getArtistID(const string& name, const shared_ptr<sqlite3 *> db);
+    uint32_t getArtistID(const shared_ptr<sqlite3 *>& db);
 
 public:
     explicit Track(const fs::path &trackLocation);
