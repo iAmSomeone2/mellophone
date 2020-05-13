@@ -25,7 +25,7 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
 FLACTrack::FLACTrack(const fs::path &trackLocation) : Track(trackLocation)
 {
@@ -34,14 +34,14 @@ FLACTrack::FLACTrack(const fs::path &trackLocation) : Track(trackLocation)
 
 void FLACTrack::importMetadata()
 {
-    FLAC__StreamMetadata* streamMetadata = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
+    FLAC__StreamMetadata *streamMetadata = FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT);
 
     if (!FLAC__metadata_get_tags(this->trackLocation.c_str(), &streamMetadata))
     {
         throw std::runtime_error("Failed to locate metadata in FLAC file.");
     }
-    
-    const auto& vorbisComment = streamMetadata->data.vorbis_comment;
+
+    const auto &vorbisComment = streamMetadata->data.vorbis_comment;
 
     uint32_t numComments = vorbisComment.num_comments;
     map<string, string> commentEntries;
@@ -49,12 +49,12 @@ void FLACTrack::importMetadata()
     uint8_t artistCount = 0;
     for (uint32_t i = 0; i < numComments; i++)
     {
-        string entry = reinterpret_cast<char*>(vorbisComment.comments[i].entry);
+        string entry = reinterpret_cast<char *>(vorbisComment.comments[i].entry);
 
         uint64_t splitLoc = entry.find('=');
 
         string name = entry.substr(0, splitLoc);
-        string value = entry.substr(splitLoc+1);
+        string value = entry.substr(splitLoc + 1);
 
         if (name == "ARTIST")
         {

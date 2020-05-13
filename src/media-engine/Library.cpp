@@ -21,7 +21,7 @@
 #include "sqlite_init.h"
 #include "Library.hpp"
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
 Library::Library()
 {

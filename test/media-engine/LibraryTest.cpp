@@ -4,7 +4,7 @@
 
 #include <Library.hpp>
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
 class LibraryTest : public ::testing::Test {
 protected:

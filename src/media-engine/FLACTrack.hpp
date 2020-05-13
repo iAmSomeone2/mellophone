@@ -22,7 +22,9 @@
 
 namespace fs = std::filesystem;
 
-namespace mellophone
+namespace Mellophone
+{
+namespace MediaEngine
 {
 class FLACTrack : public Track
 {
@@ -35,4 +37,5 @@ public:
      */
     void importMetadata();
 };
-}
+} // namespace MediaEngine
+} // namespace Mellophone

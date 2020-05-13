@@ -32,12 +32,14 @@ using std::string, std::vector, std::map, std::array;
 
 namespace fs = std::filesystem;
 
-namespace mellophone
+namespace Mellophone
 {
-    static const uint32_t KILOBYTE = 1024;
-    static const uint32_t MEGABYTE = 1048576;
+namespace MediaEngine
+{
+static const uint32_t KILOBYTE = 1024;
+static const uint32_t MEGABYTE = 1048576;
 
-    static const uint32_t HASH_BUFF_SIZE = MEGABYTE;
+static const uint32_t HASH_BUFF_SIZE = MEGABYTE;
 enum Format
 {
     flac,
@@ -48,8 +50,9 @@ enum Format
 class Track
 {
 private:
-    const char* ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
-    const char* ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+    const char *ARTIST_SELECT_SQL = "SELECT ID FROM Artists WHERE Name == \"@name\";";
+    const char *ALBUM_SELECT_SQL = "SELECT ID FROM Albums WHERE Name == \"@name\";";
+
 protected:
     // Internal data
     Format format;
@@ -72,8 +75,8 @@ protected:
     string genre = "";
     string date = "";
 
-    static string urlEncode(const string& value);
-    
+    static string urlEncode(const string &value);
+
     /**
      * Reads through a map of tags and values to retrieve the relevant metadata.
      * 
@@ -89,7 +92,7 @@ public:
      * 
      * FLAC and Vorbis are currently supported.
      */
-    static Format determineFormat(const fs::path& trackPath);
+    static Format determineFormat(const fs::path &trackPath);
 
     /**
      * Thread-safe method for generating the SHA256 hash of the track data.
@@ -104,7 +107,7 @@ public:
      * 
      * @param db database connection to use.
      */
-    void addToDatabase(const std::shared_ptr<sqlite3*> db);
+    void addToDatabase(const std::shared_ptr<sqlite3 *> db);
 
     /**
      * Retrieves the track's associated format.
@@ -173,4 +176,5 @@ public:
      */
     string getHashAsString();
 };
-}; // namespace mellophone
+}; // namespace MediaEngine
+}; // namespace Mellophone

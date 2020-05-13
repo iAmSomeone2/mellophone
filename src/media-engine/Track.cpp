@@ -32,9 +32,9 @@
 
 using std::unique_ptr;
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
-string Track::urlEncode(const string& value)
+string Track::urlEncode(const string &value)
 {
     std::ostringstream encodedStr;
     encodedStr.fill('0');
@@ -52,7 +52,7 @@ string Track::urlEncode(const string& value)
 
         // Encode all other characters
         encodedStr << std::uppercase;
-        encodedStr << '%' << std::setw(2) << int((unsigned char) c);
+        encodedStr << '%' << std::setw(2) << int((unsigned char)c);
         encodedStr << std::nouppercase;
     }
 
@@ -69,7 +69,8 @@ void Track::generateFileHash()
     std::stringstream errStream;
     std::ifstream trackStream = std::ifstream(this->trackLocation, std::ios::binary);
 
-    if (!trackStream.is_open()) {
+    if (!trackStream.is_open())
+    {
         errStream << boost::format("Unable to open '%s' to generate hash.") % this->trackLocation;
         throw std::runtime_error(errStream.str());
     }
@@ -77,11 +78,11 @@ void Track::generateFileHash()
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
 
-    uint8_t* buffer = new uint8_t[HASH_BUFF_SIZE];
+    uint8_t *buffer = new uint8_t[HASH_BUFF_SIZE];
 
     uint32_t bytesRead = 0;
 
-    while((bytesRead = trackStream.readsome(reinterpret_cast<char*>(buffer), HASH_BUFF_SIZE)))
+    while ((bytesRead = trackStream.readsome(reinterpret_cast<char *>(buffer), HASH_BUFF_SIZE)))
     {
         SHA256_Update(&sha256, buffer, bytesRead);
     }
@@ -95,7 +96,8 @@ string Track::getHashAsString()
 {
     char outBuff[65];
 
-    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
         sprintf(outBuff + (i * 2), "%02x", this->shaDigest[i]);
     }
 
@@ -104,7 +106,7 @@ string Track::getHashAsString()
     return string(outBuff);
 }
 
-Format Track::determineFormat(const fs::path& trackPath)
+Format Track::determineFormat(const fs::path &trackPath)
 {
     const string extension = trackPath.extension().c_str();
 
