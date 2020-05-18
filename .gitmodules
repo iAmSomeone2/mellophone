@@ -1,6 +1,0 @@
-[submodule "lib/-b"]
-	path = lib/-b
-	url = git://git.savannah.gnu.org/libcdio.git
-[submodule "lib/libcdio"]
-	path = lib/libcdio
-	url = git://git.savannah.gnu.org/libcdio.git
