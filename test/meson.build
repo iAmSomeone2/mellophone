@@ -1,3 +1,3 @@
 gtest = dependency('gtest', required: true)
 
-subdir('library')
+subdir('media-engine')

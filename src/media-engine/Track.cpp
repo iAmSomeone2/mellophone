@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <cctype>
+#include <iomanip>
 
 // Utility libs
 #include <boost/format.hpp>
@@ -28,9 +30,32 @@
 // Local includes
 #include "Track.hpp"
 
-using std::unique_ptr;
+using namespace Mellophone::MediaEngine;
 
-using namespace mellophone;
+string Track::urlEncode(const string &value)
+{
+    std::ostringstream encodedStr;
+    encodedStr.fill('0');
+    encodedStr << std::hex;
+
+    for (auto i = value.begin(), n = value.end(); i != n; i++)
+    {
+        string::value_type c = (*i);
+
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            encodedStr << c;
+            continue;
+        }
+
+        // Encode all other characters
+        encodedStr << std::uppercase;
+        encodedStr << '%' << std::setw(2) << int((unsigned char)c);
+        encodedStr << std::nouppercase;
+    }
+
+    return encodedStr.str();
+}
 
 Track::Track(const fs::path &trackLocation)
 {
@@ -42,7 +67,8 @@ void Track::generateFileHash()
     std::stringstream errStream;
     std::ifstream trackStream = std::ifstream(this->trackLocation, std::ios::binary);
 
-    if (!trackStream.is_open()) {
+    if (!trackStream.is_open())
+    {
         errStream << boost::format("Unable to open '%s' to generate hash.") % this->trackLocation;
         throw std::runtime_error(errStream.str());
     }
@@ -50,11 +76,11 @@ void Track::generateFileHash()
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
 
-    uint8_t* buffer = new uint8_t[HASH_BUFF_SIZE];
+    uint8_t *buffer = new uint8_t[HASH_BUFF_SIZE];
 
     uint32_t bytesRead = 0;
 
-    while((bytesRead = trackStream.readsome(reinterpret_cast<char*>(buffer), HASH_BUFF_SIZE)))
+    while ((bytesRead = trackStream.readsome(reinterpret_cast<char *>(buffer), HASH_BUFF_SIZE)))
     {
         SHA256_Update(&sha256, buffer, bytesRead);
     }
@@ -68,7 +94,8 @@ string Track::getHashAsString()
 {
     char outBuff[65];
 
-    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
         sprintf(outBuff + (i * 2), "%02x", this->shaDigest[i]);
     }
 
@@ -77,7 +104,7 @@ string Track::getHashAsString()
     return string(outBuff);
 }
 
-Format Track::determineFormat(const fs::path& trackPath)
+Format Track::determineFormat(const fs::path &trackPath)
 {
     const string extension = trackPath.extension().c_str();
 
@@ -203,6 +230,114 @@ void Track::parseVorbisCommentMap(const map<string, string> &comments)
     {
         this->performer = this->getArtist();
     }
+}
+
+
+uint32_t Track::findAlbumID(const string& name, const shared_ptr<sqlite3*>& db)
+{
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    sqlite3_prepare_v2(*db, ALBUM_SELECT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, name.c_str(), -1, SQLITE_STATIC);
+    int execResult = sqlite3_step(*stmt);
+
+    uint32_t id = 0;
+    if (execResult != SQLITE_ROW)
+    {
+        return 0;
+    }
+
+    id = sqlite3_column_int(*stmt, 0);
+    sqlite3_finalize(*stmt);
+    return id;
+}
+
+uint32_t Track::getAlbumID(const shared_ptr<sqlite3 *>& db)
+{
+    uint32_t id = Track::findAlbumID(this->album, db);
+
+    if (id != 0)
+    {
+        return id;
+    }
+
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    // No corresponding album was found, so a new entry will be created.
+    uint32_t artistID = this->getArtistID(db);
+    static const string ALBUM_INSERT_SQL = "INSERT INTO Albums(Name, Artist) VALUES(\"@name\",@artistID);";
+    sqlite3_prepare_v2(*db, ALBUM_INSERT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, this->album.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(*stmt, 2, artistID);
+    sqlite3_step(*stmt);
+    sqlite3_finalize(*stmt);
+
+    id = Track::findAlbumID(this->album, db);
+
+    return id;
+}
+
+uint32_t Track::findArtistID(const string& name, const shared_ptr<sqlite3*>& db)
+{
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    sqlite3_prepare_v2(*db, ARTIST_SELECT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, name.c_str(), -1, SQLITE_STATIC);
+    int execResult = sqlite3_step(*stmt);
+
+    uint32_t id = 0;
+    if (execResult != SQLITE_ROW)
+    {
+        return 0;
+    }
+
+    id = sqlite3_column_int(*stmt, 0);
+    sqlite3_finalize(*stmt);
+    return id;
+}
+
+uint32_t Track::getArtistID(const shared_ptr<sqlite3 *>& db)
+{
+    uint32_t id = Track::findArtistID(this->artist[0], db);
+
+    if (id != 0)
+    {
+        return id;
+    }
+
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    // No corresponding artist was found, so a new entry will be created.
+    static const string ARTIST_INSERT_SQL = "INSERT INTO Artists(Name) VALUES(\"@name\");";
+    sqlite3_prepare_v2(*db, ARTIST_INSERT_SQL.c_str(), -1, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, this->artist[0].c_str(), -1, SQLITE_STATIC);
+    sqlite3_step(*stmt);
+    sqlite3_finalize(*stmt);
+
+    id = Track::findArtistID(this->artist[0], db);
+
+    return id;
+}
+
+void Track::addToDatabase(const shared_ptr<sqlite3 *> db)
+{
+    // Start by determining if the track is already in the DB.
+    static const string FIND_CHECKSUM_STMT = "SELECT * FROM Tracks WHERE Checksum == \"?\";";
+
+    unique_ptr<sqlite3_stmt*> stmt = std::make_unique<sqlite3_stmt*>();
+
+    sqlite3_prepare_v2(*db, FIND_CHECKSUM_STMT.c_str(), FIND_CHECKSUM_STMT.length() + SHA256_STR_LEN, stmt.get(), nullptr);
+    sqlite3_bind_text(*stmt, 1, this->getHashAsString().c_str(), -1, SQLITE_STATIC);
+    int execResult = sqlite3_step(*stmt);
+
+    if (execResult != SQLITE_DONE)
+    {
+        // A file with the same checksum was already in the db.
+        sqlite3_finalize(*stmt);
+        return;
+    }
+
+    // Check if the album exists. Also checks for artist.
 }
 
 Format Track::getFormat()

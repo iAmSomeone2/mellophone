@@ -23,36 +23,46 @@
 
 namespace fs = std::filesystem;
 
-namespace mellophone {
-    static const std::string CHECK_STMT = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'Tracks\';";
-    class Library {
-    private:
-        std::shared_ptr<sqlite3*> dbConnection = std::make_shared<sqlite3*>();
-        fs::path userMusicFolder;
+namespace Mellophone
+{
+namespace MediaEngine
+{
+static const std::string CHECK_STMT = "SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'Tracks\';";
 
-        /**
+static const std::string USER_DATA_DIR = "/.local/share/mellophone/";
+
+class Library
+{
+private:
+    std::shared_ptr<sqlite3 *> dbConnection = std::make_shared<sqlite3 *>();
+    fs::path userMusicDir;
+    fs::path userDataDir;
+
+    /**
          * Confirms the existence of the database and connects to it or
          * creates a new database and connects to it.
          * 
          * @param location where to locate database in filesystem
          */
-        void initializeDatabase(const fs::path& location);
-    public:
-        Library();
+    void initializeDatabase(const fs::path &location);
 
-        ~Library();
+public:
+    Library();
 
-        /**
+    ~Library();
+
+    /**
          * Returns a reference to the user's HOME music folder.
          * 
          * @returns reference to the user's HOME music folder path.
          */
-        fs::path& getMusicFolderPath();
+    const fs::path getMusicFolderPath();
 
-        /**
+    /**
          * Scans through the user's HOME music folder to locate songs in supported 
          * formats and adds them to the database.
          */
-        void scanLibrary();
-    };
-}
+    void scanLibrary();
+};
+} // namespace MediaEngine
+} // namespace Mellophone

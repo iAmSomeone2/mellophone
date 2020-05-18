@@ -21,30 +21,62 @@
 #include "sqlite_init.h"
 #include "Library.hpp"
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
-Library::Library() {
-    const char *homeDir = getenv("HOME");
-    if (homeDir == nullptr) {
-        homeDir = getpwuid(getuid())->pw_dir;
+Library::Library()
+{
+    // Determine the user's Music directory.
+    const char *userHome = getenv("HOME");
+    if (userHome == nullptr)
+    {
+        userHome = getpwuid(getuid())->pw_dir;
     }
 
-    if (homeDir != nullptr) {
-        std::string pathStr = homeDir;
+    if (userHome != nullptr)
+    {
+        std::string pathStr = userHome;
         pathStr.append("/Music");
-        this->userMusicFolder = fs::path(pathStr);
-    } else {
-        this->userMusicFolder = fs::path("");
+        this->userMusicDir = fs::path(pathStr);
+    }
+    else
+    {
+        this->userMusicDir = fs::path(".");
     }
 
-    fs::path dbPath = this->userMusicFolder;
-    dbPath /= ".mellophone_lib.sqlite";
+    if (!fs::exists(this->userMusicDir))
+    {
+        fs::create_directories(this->userMusicDir);
+    }
+
+    // Determine the user's application data directory.
+    const char *dataHome = getenv("XDG_DATA_HOME");
+    std::string dataDir;
+    if (dataHome == nullptr)
+    {
+        dataDir = userHome;
+        dataDir.append(USER_DATA_DIR);
+        this->userDataDir = fs::path(dataDir);
+    }
+    else
+    {
+        dataDir = dataHome;
+        dataDir.append("/mellophone/");
+        this->userDataDir = dataDir;
+    }
+
+    if (!fs::exists(this->userDataDir))
+    {
+        fs::create_directories(this->userDataDir);
+    }
+
+    fs::path dbPath = this->userDataDir;
+    dbPath /= "media_library.sqlite";
 
     try
     {
         this->initializeDatabase(dbPath);
     }
-    catch (const std::runtime_error& err)
+    catch (const std::runtime_error &err)
     {
         throw err;
     }
@@ -55,24 +87,26 @@ Library::~Library()
     sqlite3_close_v2(*this->dbConnection);
 }
 
-void Library::initializeDatabase(const fs::path& location)
+void Library::initializeDatabase(const fs::path &location)
 {
     int result = sqlite3_open_v2(location.c_str(), this->dbConnection.get(),
-        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+                                 SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 
-    if (result != SQLITE_OK) {
+    if (result != SQLITE_OK)
+    {
         sqlite3_close_v2(*this->dbConnection.get());
         throw std::runtime_error("Failed to open database.");
     }
 
     // Set up the database if it's empty.
-    sqlite3_stmt* checkStmt;
+    sqlite3_stmt *checkStmt;
     sqlite3_prepare_v2(*this->dbConnection, CHECK_STMT.c_str(), CHECK_STMT.length(), &checkStmt, nullptr);
     result = sqlite3_step(checkStmt);
 
     sqlite3_finalize(checkStmt);
 
-    if (result == SQLITE_DONE){
+    if (result == SQLITE_DONE)
+    {
         // No rows were returned, so the db can be assumed to be empty.
         sqlite3_exec(*this->dbConnection, SQLITE_INIT_STMT, nullptr, nullptr, nullptr);
     }
@@ -83,14 +117,15 @@ void Library::initializeDatabase(const fs::path& location)
  * 
  * @returns reference to the user's HOME music folder path.
  */
-fs::path& Library::getMusicFolderPath() {
-    return this->userMusicFolder;
-} 
+const fs::path Library::getMusicFolderPath()
+{
+    return this->userMusicDir;
+}
 
 /**
  * Scans through the user's HOME music folder to locate songs in supported 
  * formats and adds them to the database.
  */
-void Library::scanLibrary() {
-    
+void Library::scanLibrary()
+{
 }

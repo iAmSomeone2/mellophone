@@ -11,4 +11,6 @@ proj_include = include_directories('include')
 
 subdir('src')
 
-subdir('test')
+if get_option('enable_tests')
+    subdir('test')
+endif

@@ -3,13 +3,15 @@
 
 #include <FLACTrack.hpp>
 
-using namespace mellophone;
+using namespace Mellophone::MediaEngine;
 
 class FLACTrackTest : public ::testing::Test
 {
 protected:
   const fs::path flacFile = fs::path("/home/bdavidson/Music/Black Keys, The/Attack & Release (HQ)/02 I Got Mine.flac");
   const string expectedHash = "fa16f387aa12c4232adda38e474d62901c6f951c8cb53125073359563391f3ad";
+
+  const fs::path badFile = fs::path("/dev/null");
 };
 
 TEST_F(FLACTrackTest, CheckTrackFormat)
@@ -18,6 +20,12 @@ TEST_F(FLACTrackTest, CheckTrackFormat)
   FLACTrack track = FLACTrack(this->flacFile);
 
   ASSERT_EQ(Format::flac, track.getFormat());
+}
+
+TEST_F(FLACTrackTest, ReadBadFile)
+{
+  FLACTrack badTrack = FLACTrack(this->badFile);
+  EXPECT_ANY_THROW(badTrack.importMetadata());
 }
 
 TEST_F(FLACTrackTest, CheckMetadata)
