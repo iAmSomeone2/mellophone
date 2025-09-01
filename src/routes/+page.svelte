@@ -13,12 +13,13 @@
 </script>
 
 <main class="container">
-  <Jukebox/>
+  <Jukebox  />
 </main>
 
 <style>
   main {
-    height: 100%;
+    height: 100vh;
+    width: 100vw;
     padding: 0;
   }
 </style>

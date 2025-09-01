@@ -35,6 +35,17 @@ body {
     justify-content: center;
 }
 
+.animate-resize {
+    transition: width 0.08s ease-in, height 0.08s ease-in;
+}
+
+/*
+    Blur effect filter useful when resizing animated content
+ */
+.blur-resize {
+    filter: blur(5px) brightness(80%);
+}
+
 a {
     font-weight: 500;
     color: #646cff;
