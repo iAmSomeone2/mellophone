@@ -9,6 +9,10 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    alias: {
+      $stores: "./src/stores",
+      $assets: "./assets",
+    },
     adapter: adapter({
       fallback: "index.html",
     }),

@@ -3,6 +3,7 @@ use nom::{
     number::complete::{be_u32, le_u32},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompressedTextureFormat {
     DXT1RGB,
     DXT1RGBA,
@@ -10,9 +11,18 @@ pub enum CompressedTextureFormat {
     DXT5RGBA,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextureFormat {
+    RGB,
+    RGBA,
+    Compressed(CompressedTextureFormat),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GPUTexture {
     pub width: u32,
     pub height: u32,
+    pub format: TextureFormat,
     pub img_buffer: Vec<u8>,
     pub mip_maps: Vec<GPUTexture>,
 }
@@ -55,7 +65,7 @@ trait Loadable {
     fn is_file_type(input: &[u8]) -> bool;
 
     /// Loads the provided data into a GPUTexture.
-    fn load(input: &[u8]) -> Result<Self, LoadTextureError>;
+    fn load(input: &[u8]) -> Result<GPUTexture, LoadTextureError>;
 }
 
 /// DirectDraw Surface file handling
@@ -362,9 +372,25 @@ mod dds {
         extra_surfaces: Vec<Vec<u8>>,
     }
 
-    impl DirectDrawSurface {
-        fn load(input: &[u8]) -> Result<Self, LoadTextureError> {
-            let (rem, )
+    impl Loadable for DirectDrawSurface {
+        fn is_file_type(input: &[u8]) -> bool {
+            if input.len() < DDSHeader::STRUCT_SIZE {
+                // File is too small to be a DDS file
+                return false;
+            }
+
+            // Check for Magic number
+            let first_dword = u32::from_be_bytes([input[0], input[1], input[2], input[3]]);
+            first_dword == MAGIC_NUM
+        }
+
+        fn load(input: &[u8]) -> Result<GPUTexture, LoadTextureError> {
+            if !Self::is_file_type(input) {
+                return Err(LoadTextureError::InvalidFormat);
+            }
+
+            let (rem, header) = DDSHeader::parse(&input[4..]).map_err(|_| LoadTextureError::InvalidFormat)?;
+            todo!()
         }
     }
 

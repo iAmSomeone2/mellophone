@@ -44,28 +44,38 @@ export default class JukeboxRenderer {
 
         // Make box
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshPhongMaterial({color: 0x00FF00});
+        const material = new THREE.MeshPhongMaterial({color: 0x11FFAA, precision: "highp"});
         this.cube = new THREE.Mesh(geometry, material);
         this.scene.add(this.cube);
 
         // Make light
         this.light = new THREE.DirectionalLight(0xffffff, 3);
-        this.light.position.set(-1, 2, 4);
+        this.light.position.set(-1, 2, 5);
         this.scene.add(this.light);
 
-        this.camera.position.setZ(5);
+        this.camera.position.setZ(2);
 
         // Render once to at least have a starting image
         this.render();
     }
 
     public resize(width: number, height: number) {
-        this.canvas.width = Math.trunc(width);
-        this.canvas.height = Math.trunc(height);
+        width = Math.trunc(width);
+        height = Math.trunc(height);
+
+        this.canvas.style.width = `${width}px`;
+        this.canvas.style.height = `${height}px`;
+
+        const pixelRatio = window.devicePixelRatio ?? 1.0;
+        width *= pixelRatio;
+        height *= pixelRatio;
+
+        this.renderer.setSize(width, height, false);
+        this.canvas.width = width;
+        this.canvas.height = height;
 
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(width, height);
 
         if (!this._isAnimating) this.render(); // Render at least once to resolve the new aspect ratio
         console.debug(
