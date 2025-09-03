@@ -19,12 +19,20 @@ pub enum TextureFormat {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GPUTexture {
+pub struct TextureData {
     pub width: u32,
     pub height: u32,
-    pub format: TextureFormat,
     pub img_buffer: Vec<u8>,
-    pub mip_maps: Vec<GPUTexture>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GPUTexture {
+    /// Texture data format
+    pub format: TextureFormat,
+    /// Top-level texture
+    pub main_image: TextureData,
+    /// Optional Texture mip maps
+    pub mip_maps: Option<Vec<TextureData>>,
 }
 
 fn parse_le_u32_flags<F>(input: &[u8]) -> IResult<&[u8], F>
@@ -39,10 +47,7 @@ where
 #[derive(PartialEq, Debug, Clone, Copy, Eq)]
 pub enum LoadTextureError {
     InvalidFormat,
-    InvalidSize {
-        expected: usize,
-        actual: usize,
-    },
+    InvalidSize { expected: usize, actual: usize },
 }
 
 impl std::fmt::Display for LoadTextureError {
@@ -73,6 +78,7 @@ mod dds {
     use super::*;
     use bitflags::bitflags;
     use nom::error::make_error;
+    use std::ops::Range;
 
     /// First 4 bytes of a DDS file
     const MAGIC_NUM: u32 = u32::from_be_bytes(*b"DDS ");
@@ -224,6 +230,34 @@ mod dds {
         alpha_mask: u32,
     }
 
+    impl TryFrom<PixelFormat> for TextureFormat {
+        type Error = ();
+
+        fn try_from(value: PixelFormat) -> Result<Self, Self::Error> {
+            if value.flags.contains(PixelFmtFlags::FourCC) {
+                // Image data uses a DXTn compression scheme
+                match value.four_char_code {
+                    FourCharCode::DXT1 => {
+                        if value.flags.contains(PixelFmtFlags::AlphaPixels) {
+                            Ok(TextureFormat::Compressed(CompressedTextureFormat::DXT1RGBA))
+                        } else {
+                            Ok(TextureFormat::Compressed(CompressedTextureFormat::DXT1RGB))
+                        }
+                    }
+                    FourCharCode::DXT3 => {
+                        Ok(TextureFormat::Compressed(CompressedTextureFormat::DXT3RGBA))
+                    }
+                    FourCharCode::DXT5 => {
+                        Ok(TextureFormat::Compressed(CompressedTextureFormat::DXT5RGBA))
+                    }
+                    _ => Err(()),
+                }
+            } else {
+                Err(())
+            }
+        }
+    }
+
     impl PixelFormat {
         const STRUCT_SIZE: usize = 32;
 
@@ -361,6 +395,114 @@ mod dds {
 
             Ok((rem, header))
         }
+
+        const MISSING_FEATURE_TXT: &'static str =
+            "Uncompressed DDS textures are not currently supported";
+
+        fn get_next_mip<'d>(
+            &self,
+            data: &'d [u8],
+            current_layer_size: usize,
+            level: usize,
+        ) -> (&'d [u8], TextureData) {
+            let is_square = self.width == self.height;
+            let min_block_bytes: usize = match self.pixel_format.four_char_code {
+                FourCharCode::DXT1 => 8,
+                _ => 16,
+            };
+
+            let width = self.width >> level;
+            let height = self.height >> level;
+
+            let layer_size = if is_square {
+                current_layer_size / 4
+            } else {
+                std::cmp::max(1, (width as usize).div_ceil(4))
+                    * std::cmp::max(1, (height as usize).div_ceil(4))
+                    * min_block_bytes
+            };
+            let layer_size = std::cmp::max(layer_size, min_block_bytes);
+
+            (
+                &data[layer_size..],
+                TextureData {
+                    img_buffer: Vec::from(&data[..layer_size]),
+                    width,
+                    height,
+                },
+            )
+        }
+
+        fn get_tex_data(&self, input: &[u8]) -> (TextureData, Option<Vec<TextureData>>) {
+            if matches!(self.texture_sizing, TextureSizing::Pitch(..)) {
+                todo!("{}", Self::MISSING_FEATURE_TXT);
+            }
+
+            // let is_square = self.width == self.height;
+            // let min_block_bytes: usize = match self.pixel_format.four_char_code {
+            //     FourCharCode::DXT1 => 8,
+            //     _ => 16,
+            // };
+            //
+            // let get_next_mip =
+            //     |data: &'d [u8], current_layer_size: usize, level: usize| -> (&[u8], TextureData) {
+            //         let width = self.width >> level;
+            //         let height = self.height >> level;
+            //
+            //         let layer_size = if is_square {
+            //             current_layer_size / 4
+            //         } else {
+            //             std::cmp::max(1, (width as usize).div_ceil(4))
+            //                 * std::cmp::max(1, (height as usize).div_ceil(4))
+            //                 * min_block_bytes
+            //         };
+            //         let layer_size = std::cmp::max(layer_size, min_block_bytes);
+            //
+            //         (
+            //             &data[layer_size..],
+            //             TextureData {
+            //                 img_buffer: Vec::from(&data[..layer_size]),
+            //                 width,
+            //                 height,
+            //             },
+            //         )
+            //     };
+
+            // Number of mip maps -- not including top level texture -- in the DDS file
+            let mip_count = (self.mip_map_count.unwrap_or(1) as usize) - 1;
+
+            let mut current_layer_size: usize =
+                if let TextureSizing::Linear(size) = self.texture_sizing {
+                    size as usize
+                } else {
+                    todo!("{}", Self::MISSING_FEATURE_TXT);
+                };
+
+            let main_tex_end = current_layer_size;
+            let main_texture = TextureData {
+                img_buffer: Vec::from(&input[..main_tex_end]),
+                width: self.width,
+                height: self.height,
+            };
+            println!("Main texture size: {} bytes", main_texture.img_buffer.len());
+            if mip_count == 0 {
+                return (main_texture, None);
+            }
+
+            let mut input = &input[main_tex_end..];
+
+            let mut mip_maps: Vec<TextureData> = Vec::with_capacity(mip_count);
+
+            // Calculate the mip map values
+            for level in 0..mip_count {
+                let (rem, mip_map) = self.get_next_mip(input, current_layer_size, level + 1);
+                current_layer_size = mip_map.img_buffer.len();
+                mip_maps.push(mip_map);
+                input = rem;
+            }
+
+            (main_texture, Some(mip_maps))
+        }
     }
 
     /// DirectDraw Surface (DDS) file containing uncompressed or compressed DirectX textures.
@@ -389,8 +531,16 @@ mod dds {
                 return Err(LoadTextureError::InvalidFormat);
             }
 
-            let (rem, header) = DDSHeader::parse(&input[4..]).map_err(|_| LoadTextureError::InvalidFormat)?;
-            todo!()
+            let (rem, header) =
+                DDSHeader::parse(&input[4..]).map_err(|_| LoadTextureError::InvalidFormat)?;
+
+            let (main_image, mip_maps) = header.get_tex_data(rem);
+
+            Ok(GPUTexture {
+                format: TextureFormat::Compressed(CompressedTextureFormat::DXT3RGBA),
+                main_image,
+                mip_maps,
+            })
         }
     }
 
@@ -422,7 +572,7 @@ mod dds {
         fn parse_dds_header() {
             let test_data = {
                 let test_path = PathBuf::from(ASSETS_DIR)
-                    .join("missing_album_cover.dds")
+                    .join("cd-rw_nomips.dds")
                     .canonicalize()
                     .unwrap();
                 std::fs::read(&test_path).unwrap()
@@ -432,6 +582,22 @@ mod dds {
             assert!(parse_header_result.is_ok());
             let (_rem, header) = parse_header_result.unwrap();
             println!("{:?}", header);
+        }
+
+        #[test]
+        fn load_dds_file() {
+            let test_data = {
+                let test_path = PathBuf::from(ASSETS_DIR)
+                    .join("cd-rw.dds")
+                    .canonicalize()
+                    .unwrap();
+                std::fs::read(&test_path).unwrap()
+            };
+
+            let load_dds_result = DirectDrawSurface::load(&test_data);
+            assert!(load_dds_result.is_ok());
+            let texture = load_dds_result.unwrap();
+            println!("{:#?}", texture.mip_maps.unwrap().len());
         }
     }
 }
